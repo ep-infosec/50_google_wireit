@@ -1,0 +1,133 @@
+{
+  "name": "@wireit/internal-vscode-extension",
+  "#comment": [
+    "This file is for dependency management and scripts, the file that",
+    "is used for the actual vscode plugin is package-for-extension.json"
+  ],
+  "private": true,
+  "scripts": {
+    "vscode:prepublish": "npm run build:package",
+    "package": "wireit",
+    "test": "wireit",
+    "test:actual": "wireit",
+    "build": "wireit",
+    "build:ts": "wireit",
+    "build:copy-schema": "wireit",
+    "build:bundle": "wireit",
+    "watch": "npm run build watch",
+    "install-extension": "wireit",
+    "build:package": "wireit",
+    "test:compile": "wireit"
+  },
+  "engines": {
+    "vscode": "^1.66.0"
+  },
+  "wireit": {
+    "build": {
+      "dependencies": [
+        "build:ts",
+        "build:package"
+      ]
+    },
+    "build:copy-schema": {
+      "files": [
+        "../schema.json"
+      ],
+      "output": [
+        "schema.json"
+      ],
+      "command": "cp ../schema.json ./schema.json"
+    },
+    "build:ts": {
+      "dependencies": [
+        "..:build"
+      ],
+      "files": [
+        "tsconfig.json",
+        "src/**/*.ts"
+      ],
+      "output": [
+        "lib"
+      ],
+      "clean": "if-file-deleted",
+      "command": "tsc --skipLibCheck || echo ''"
+    },
+    "test:compile": {
+      "dependencies": [
+        "..:build"
+      ],
+      "files": [
+        "tsconfig.json",
+        "src/**/*.ts"
+      ],
+      "output": [],
+      "command": "tsc --noEmit"
+    },
+    "build:bundle": {
+      "files": [
+        "src/**/*.ts",
+        "../src/**/*.ts",
+        "esbuild.script.mjs"
+      ],
+      "output": [
+        "built/client.js",
+        "built/server.js"
+      ],
+      "command": "node esbuild.script.mjs"
+    },
+    "test": {
+      "dependencies": [
+        "test:compile",
+        "test:actual"
+      ]
+    },
+    "test:actual": {
+      "dependencies": [
+        "build:package",
+        "build:ts"
+      ],
+      "files": [
+        "package.json",
+        "built/"
+      ],
+      "output": [],
+      "command": "node ./lib/test/scripts/runner.js"
+    },
+    "build:package": {
+      "dependencies": [
+        "build:bundle",
+        "build:ts"
+      ],
+      "files": [
+        "../schema.json",
+        "../LICENSE",
+        "README.md",
+        "CHANGELOG.md"
+      ],
+      "output": [
+        "built/schema.json",
+        "built/LICENSE",
+        "built/README.md",
+        "built/CHANGELOG.md"
+      ],
+      "command": "node lib/scripts/copy-to-built.js"
+    },
+    "package": {
+      "dependencies": [
+        "build:package"
+      ],
+      "files": [
+        "built",
+        "!built/*.vsix"
+      ],
+      "command": "cd built && vsce package -o wireit.vsix"
+    },
+    "install-extension": {
+      "dependencies": [
+        "package"
+      ],
+      "#comment": "Useful when manually testing, you can run this in watch mode, and do a > Developer: Reload Window in vscode to pick up the new version of the extension.",
+      "command": "code --install-extension built/wireit.vsix"
+    }
+  }
+}
